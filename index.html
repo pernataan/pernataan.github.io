@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Stok Barang - REPORT</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 1000px; margin: auto; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; }
+    th { background: #f4f4f4; }
+    input { padding: 6px; width: 300px; }
+    button { padding: 6px 12px; margin-left: 5px; }
+  </style>
+</head>
+<body>
+  <h2>📦 Daftar Stok Barang (Sheet REPORT)</h2>
+
+  <input type="text" id="search" placeholder="Cari SKU, Nama, Tipe, Lantai..." oninput="filterData()">
+  <button onclick="loadData()">🔄 Refresh</button>
+
+  <table id="data-table">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const apiUrl = "https://script.google.com/macros/s/AKfycbzvomwSDOeilfIP0dDvP8BnXC7WBjkDx2vwjM3OyVEg5DPmp6cWNmZsOHFsCjbs1qSn/exec"; // Ganti dengan URL Web App kamu
+    let allData = [];
+
+    async function loadData() {
+      try {
+        const res = await fetch(apiUrl);
+        allData = await res.json();
+        filterData();
+      } catch (err) {
+        alert("Gagal mengambil data");
+        console.error(err);
+      }
+    }
+
+    function filterData() {
+      const keyword = document.getElementById("search").value.toLowerCase();
+      const filtered = allData.filter(row =>
+        Object.values(row).some(val =>
+          String(val).toLowerCase().includes(keyword)
+        )
+      );
+      renderTable(filtered);
+    }
+
+    function renderTable(data) {
+      const thead = document.querySelector("#data-table thead");
+      const tbody = document.querySelector("#data-table tbody");
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
+
+      if (data.length === 0) {
+        thead.innerHTML = "<tr><th>Data Kosong</th></tr>";
+        return;
+      }
+
+      const headers = Object.keys(data[0]);
+      thead.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>`;
+
+      data.forEach(row => {
+        const rowHTML = `<tr>${headers.map(h => `<td>${row[h] ?? ''}</td>`).join("")}</tr>`;
+        tbody.innerHTML += rowHTML;
+      });
+    }
+
+    // Load awal
+    loadData();
+  </script>
+</body>
+</html>
