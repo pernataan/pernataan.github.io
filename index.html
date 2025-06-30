@@ -2,21 +2,43 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Stok Barang - REPORT</title>
+  <title>Pernataan DPS</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 1000px; margin: auto; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; }
-    th { background: #f4f4f4; }
-    input { padding: 6px; width: 300px; }
-    button { padding: 6px 12px; margin-left: 5px; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    input, select {
+      padding: 6px;
+      margin-bottom: 10px;
+      margin-right: 10px;
+      font-size: 14px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px 10px;
+      text-align: left;
+    }
+    th {
+      background: #f0f0f0;
+      cursor: pointer;
+    }
+    th.sort-asc::after {
+      content: " 🔼";
+    }
+    th.sort-desc::after {
+      content: " 🔽";
+    }
   </style>
 </head>
 <body>
-  <h2>📦 Daftar Stok Barang (Sheet REPORT)</h2>
+  <h2>Pernataan DPS</h2>
 
-  <input type="text" id="search" placeholder="Cari SKU, Nama, Tipe, Lantai..." oninput="filterData()">
-  <button onclick="loadData()">🔄 Refresh</button>
+  <input type="text" id="searchInput" placeholder="Cari SKU atau Nama..." oninput="renderTable()" />
 
   <table id="data-table">
     <thead></thead>
@@ -24,52 +46,82 @@
   </table>
 
   <script>
-    const apiUrl = "https://script.google.com/macros/s/AKfycbzvomwSDOeilfIP0dDvP8BnXC7WBjkDx2vwjM3OyVEg5DPmp6cWNmZsOHFsCjbs1qSn/exec"; // Ganti dengan URL Web App kamu
-    let allData = [];
+    const firebaseUrl = "https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/rekap.json";
+    const columnOrder = [
+      "NAMA",
+      "SKU",
+      "A12 - 1",
+      "A12 - 2",
+      "A12 - 3",
+      "A12 - 4",
+      "A19 - 1",
+      "A19 - 2",
+      "A19 - 3",
+      "A20 - 1",
+      "A20 - 3",
+      "LTC",
+      "Grand Total"
+    ];
 
-    async function loadData() {
-      try {
-        const res = await fetch(apiUrl);
-        allData = await res.json();
-        filterData();
-      } catch (err) {
-        alert("Gagal mengambil data");
-        console.error(err);
-      }
+    let data = [];
+    let currentSort = { column: null, asc: true };
+
+    function sortData(column) {
+      const asc = currentSort.column === column ? !currentSort.asc : true;
+      currentSort = { column, asc };
+      data.sort((a, b) => {
+        let valA = a[column] ?? '';
+        let valB = b[column] ?? '';
+        if (!isNaN(valA) && !isNaN(valB)) {
+          valA = parseFloat(valA);
+          valB = parseFloat(valB);
+        }
+        return asc ? valA > valB ? 1 : -1 : valA < valB ? 1 : -1;
+      });
+      renderTable();
     }
 
-    function filterData() {
-      const keyword = document.getElementById("search").value.toLowerCase();
-      const filtered = allData.filter(row =>
-        Object.values(row).some(val =>
-          String(val).toLowerCase().includes(keyword)
-        )
-      );
-      renderTable(filtered);
-    }
-
-    function renderTable(data) {
+    function renderTable() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
       const thead = document.querySelector("#data-table thead");
       const tbody = document.querySelector("#data-table tbody");
-      thead.innerHTML = "";
-      tbody.innerHTML = "";
 
-      if (data.length === 0) {
-        thead.innerHTML = "<tr><th>Data Kosong</th></tr>";
-        return;
-      }
+      thead.innerHTML = '';
+      const headerRow = document.createElement('tr');
+      columnOrder.forEach(col => {
+        const th = document.createElement('th');
+        th.textContent = col;
+        th.onclick = () => sortData(col);
+        if (currentSort.column === col) {
+          th.classList.add(currentSort.asc ? 'sort-asc' : 'sort-desc');
+        }
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
 
-      const headers = Object.keys(data[0]);
-      thead.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>`;
-
-      data.forEach(row => {
-        const rowHTML = `<tr>${headers.map(h => `<td>${row[h] ?? ''}</td>`).join("")}</tr>`;
-        tbody.innerHTML += rowHTML;
+      tbody.innerHTML = '';
+      data.filter(row => {
+        const keyword = `${row["SKU"] ?? ''} ${row["NAMA"] ?? ''}`.toLowerCase();
+        return keyword.includes(search);
+      }).forEach(row => {
+        const tr = document.createElement('tr');
+        columnOrder.forEach(col => {
+          const td = document.createElement('td');
+          td.textContent = row[col] ?? '';
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
       });
     }
 
-    // Load awal
-    loadData();
+    async function fetchData() {
+      const res = await fetch(firebaseUrl);
+      const json = await res.json();
+      data = Object.values(json || {});
+      renderTable();
+    }
+
+    fetchData();
   </script>
 </body>
 </html>
