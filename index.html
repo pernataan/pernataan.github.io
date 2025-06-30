@@ -1,83 +1,140 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Pernataan DPS</title>
+  <meta charset="UTF-8" />
+  <title>Data Stok Gudang</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    :root {
+      --bg: #ffffff;
+      --text: #000000;
+      --table-header: #f0f0f0;
+      --border: #cccccc;
+    }
+
+    body.dark {
+      --bg: #1e1e1e;
+      --text: #ffffff;
+      --table-header: #2a2a2a;
+      --border: #555555;
+    }
+
     body {
+      background-color: var(--bg);
+      color: var(--text);
       font-family: sans-serif;
-      padding: 20px;
+      padding: 1rem;
+      transition: background 0.3s, color 0.3s;
     }
-    input, select {
-      padding: 6px;
-      margin-bottom: 10px;
-      margin-right: 10px;
+
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    input, button {
+      padding: 6px 10px;
       font-size: 14px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background-color: var(--bg);
+      color: var(--text);
     }
+
+    button:hover {
+      cursor: pointer;
+      background-color: var(--table-header);
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
     table {
-      border-collapse: collapse;
       width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
     }
+
     th, td {
-      border: 1px solid #ccc;
+      border: 1px solid var(--border);
       padding: 6px 10px;
       text-align: left;
+      white-space: nowrap;
     }
+
     th {
-      background: #f0f0f0;
+      background-color: var(--table-header);
       cursor: pointer;
     }
+
     th.sort-asc::after {
       content: " 🔼";
     }
+
     th.sort-desc::after {
       content: " 🔽";
     }
   </style>
 </head>
-<body>
-  <h2>Pernataan DPS</h2>
+<body class="light">
+  <h2>Data Stok Gudang</h2>
 
-  <input type="text" id="searchInput" placeholder="Cari SKU atau Nama..." oninput="renderTable()" />
+  <div class="topbar">
+    <input type="text" id="searchInput" placeholder="Cari SKU atau Nama..." oninput="renderTable()" />
+    <button onclick="toggleTheme()">Toggle Tema 🌗</button>
+  </div>
 
-  <table id="data-table">
-    <thead></thead>
-    <tbody></tbody>
-  </table>
+  <div class="table-wrapper">
+    <table id="data-table">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
   <script>
     const firebaseUrl = "https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/rekap.json";
     const columnOrder = [
-      "NAMA",
-      "SKU",
-      "A12 - 1",
-      "A12 - 2",
-      "A12 - 3",
-      "A12 - 4",
-      "A19 - 1",
-      "A19 - 2",
-      "A19 - 3",
-      "A20 - 1",
-      "A20 - 3",
-      "LTC",
-      "Grand Total"
+      "SKU", "NAMA",
+      "A12 - 1", "A12 - 2", "A12 - 3", "A12 - 4",
+      "A19 - 1", "A19 - 2", "A19 - 3",
+      "A20 - 1", "A20 - 3",
+      "LTC", "Grand Total"
     ];
 
     let data = [];
     let currentSort = { column: null, asc: true };
 
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+    }
+
     function sortData(column) {
       const asc = currentSort.column === column ? !currentSort.asc : true;
       currentSort = { column, asc };
+
       data.sort((a, b) => {
-        let valA = a[column] ?? '';
-        let valB = b[column] ?? '';
-        if (!isNaN(valA) && !isNaN(valB)) {
-          valA = parseFloat(valA);
-          valB = parseFloat(valB);
+        let valA = a[column];
+        let valB = b[column];
+
+        // Anggap nilai kosong = 0 saat sorting
+        const numA = (valA === undefined || valA === null || valA === '') ? 0 : Number(valA);
+        const numB = (valB === undefined || valB === null || valB === '') ? 0 : Number(valB);
+
+        // Kalau angka, bandingkan sebagai angka
+        if (!isNaN(numA) && !isNaN(numB)) {
+          return asc ? numA - numB : numB - numA;
         }
-        return asc ? valA > valB ? 1 : -1 : valA < valB ? 1 : -1;
+
+        // Kalau bukan angka (contoh: kolom NAMA atau SKU), bandingkan string
+        const strA = valA ? valA.toString().toLowerCase() : '';
+        const strB = valB ? valB.toString().toLowerCase() : '';
+        return asc ? strA.localeCompare(strB) : strB.localeCompare(strA);
       });
+
       renderTable();
     }
 
