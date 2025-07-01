@@ -27,15 +27,35 @@
       transition: background 0.3s, color 0.3s;
     }
 
-    .topbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      margin-bottom: 1rem;
+    #spinner {
+      display: none;
+      margin-left: 10px;
+      width: 18px;
+      height: 18px;
+      border: 3px solid var(--border);
+      border-top: 3px solid var(--text);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
 
-    input, button {
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #filter-bar {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    input, button, select {
       padding: 6px 10px;
       font-size: 14px;
       border: 1px solid var(--border);
@@ -49,14 +69,34 @@
       background-color: var(--table-header);
     }
 
+    #lantaiCheckboxes{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    #status-bar{
+      position: relative;
+      color: gray;
+      float: right;
+    }
+
     .table-wrapper {
-      overflow-x: auto;
+      max-height: 80vh;
+      overflow: auto;
+      border: 1px solid var(--border);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 800px;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background-color: var(--table-header);
+      z-index: 1;
     }
 
     th, td {
@@ -68,6 +108,7 @@
 
     th {
       background-color: var(--table-header);
+      position: relative;
       cursor: pointer;
     }
 
@@ -78,13 +119,32 @@
     th.sort-desc::after {
       content: " 🔽";
     }
+
+    th .resizer {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 5px;
+      height: 100%;
+      cursor: col-resize;
+      -webkit-user-select: none;
+      user-select: none;
+    }
   </style>
 </head>
-<body class="light">
-  <h2>Pernataan DPS</h2>
+<body>
+  <header>
+    <h2>Pernataan DPS</h2>
+    <div id="status-bar">
+      Last updated: <span id="lastUpdated">-</span>
+      <span id="spinner"></span>
+    </div>
+  </header>
 
-  <div class="topbar">
+  <div id="filter-bar">
     <input type="text" id="searchInput" placeholder="Cari SKU atau Nama..." oninput="renderTable()" />
+    <div id="lantaiCheckboxes"></div>
+    <button onclick="selectAllFloors()">Pilih Semua Lantai</button>
     <button onclick="toggleTheme()">Toggle Tema 🌗</button>
   </div>
 
@@ -97,12 +157,19 @@
 
   <script>
     const firebaseUrl = "https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/rekap.json";
-    const columnOrder = [
+    const allColumns = [
       "SKU", "NAMA",
       "A12 - 1", "A12 - 2", "A12 - 3", "A12 - 4",
       "A19 - 1", "A19 - 2", "A19 - 3",
       "A20 - 1", "A20 - 3",
       "LTC", "Grand Total"
+    ];
+
+    const floorColumns = [
+      "A12 - 1", "A12 - 2", "A12 - 3", "A12 - 4",
+      "A19 - 1", "A19 - 2", "A19 - 3",
+      "A20 - 1", "A20 - 3",
+      "LTC"
     ];
 
     let data = [];
@@ -112,29 +179,70 @@
       document.body.classList.toggle('dark');
     }
 
+    function updateLastUpdated() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('id-ID');
+      document.getElementById("lastUpdated").textContent = timeStr;
+    }
+
+    function getSelectedFloors() {
+      return JSON.parse(localStorage.getItem("selectedFloors") || "[]");
+    }
+
+    function selectAllFloors() {
+      floorColumns.forEach(floor => {
+        const cb = document.querySelector(`#lantaiCheckboxes input[value="${floor}"]`);
+        if (cb) cb.checked = true;
+      });
+      saveLantaiFilter();
+    }
+
+    function saveLantaiFilter() {
+      const checkboxes = document.querySelectorAll("#lantaiCheckboxes input[type='checkbox']");
+      const selected = Array.from(checkboxes)
+                            .filter(cb => cb.checked)
+                            .map(cb => cb.value);
+      localStorage.setItem("selectedFloors", JSON.stringify(selected));
+      renderTable();
+    }
+
+    function setupLantaiFilter() {
+      const container = document.getElementById("lantaiCheckboxes");
+      container.innerHTML = "";
+
+      const selected = getSelectedFloors();
+
+      floorColumns.forEach(floor => {
+        const label = document.createElement("label");
+        label.style.display = "flex";
+        label.style.alignItems = "center";
+        label.style.gap = "4px";
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = floor;
+        checkbox.checked = selected.includes(floor);
+        checkbox.onchange = saveLantaiFilter;
+
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(floor));
+        container.appendChild(label);
+      });
+    }
+
     function sortData(column) {
       const asc = currentSort.column === column ? !currentSort.asc : true;
       currentSort = { column, asc };
-
       data.sort((a, b) => {
         let valA = a[column];
         let valB = b[column];
-
-        // Anggap nilai kosong = 0 saat sorting
         const numA = (valA === undefined || valA === null || valA === '') ? 0 : Number(valA);
         const numB = (valB === undefined || valB === null || valB === '') ? 0 : Number(valB);
-
-        // Kalau angka, bandingkan sebagai angka
-        if (!isNaN(numA) && !isNaN(numB)) {
-          return asc ? numA - numB : numB - numA;
-        }
-
-        // Kalau bukan angka (contoh: kolom NAMA atau SKU), bandingkan string
+        if (!isNaN(numA) && !isNaN(numB)) return asc ? numA - numB : numB - numA;
         const strA = valA ? valA.toString().toLowerCase() : '';
         const strB = valB ? valB.toString().toLowerCase() : '';
         return asc ? strA.localeCompare(strB) : strB.localeCompare(strA);
       });
-
       renderTable();
     }
 
@@ -142,16 +250,28 @@
       const search = document.getElementById('searchInput').value.toLowerCase();
       const thead = document.querySelector("#data-table thead");
       const tbody = document.querySelector("#data-table tbody");
+      const selectedFloors = getSelectedFloors();
+      const displayColumns = ["SKU", "NAMA", ...selectedFloors, "Grand Total"];
+      const savedWidths = JSON.parse(localStorage.getItem("columnWidths") || "{}");
 
       thead.innerHTML = '';
       const headerRow = document.createElement('tr');
-      columnOrder.forEach(col => {
+      displayColumns.forEach((col, i) => {
         const th = document.createElement('th');
         th.textContent = col;
         th.onclick = () => sortData(col);
         if (currentSort.column === col) {
           th.classList.add(currentSort.asc ? 'sort-asc' : 'sort-desc');
         }
+        if (savedWidths[col]) {
+          th.style.width = savedWidths[col];
+        }
+
+        const resizer = document.createElement("div");
+        resizer.className = "resizer";
+        resizer.addEventListener("mousedown", initResize(i, col));
+        th.appendChild(resizer);
+
         headerRow.appendChild(th);
       });
       thead.appendChild(headerRow);
@@ -162,7 +282,7 @@
         return keyword.includes(search);
       }).forEach(row => {
         const tr = document.createElement('tr');
-        columnOrder.forEach(col => {
+        displayColumns.forEach(col => {
           const td = document.createElement('td');
           td.textContent = row[col] ?? '';
           tr.appendChild(td);
@@ -171,14 +291,63 @@
       });
     }
 
+    function initResize(index, colKey) {
+      return function (e) {
+        e.preventDefault();
+        const th = document.querySelectorAll("th")[index];
+        const startX = e.pageX;
+        const startWidth = th.offsetWidth;
+
+        function onMouseMove(e) {
+          const newWidth = startWidth + (e.pageX - startX);
+          th.style.width = newWidth + "px";
+          const savedWidths = JSON.parse(localStorage.getItem("columnWidths") || "{}");
+          savedWidths[colKey] = th.style.width;
+          localStorage.setItem("columnWidths", JSON.stringify(savedWidths));
+        }
+
+        function onMouseUp() {
+          document.removeEventListener("mousemove", onMouseMove);
+          document.removeEventListener("mouseup", onMouseUp);
+        }
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+      };
+    }
+
     async function fetchData() {
-      const res = await fetch(firebaseUrl);
-      const json = await res.json();
-      data = Object.values(json || {});
+      document.getElementById("spinner").style.display = "inline-block";
+
+      const [stockRes, skuRes] = await Promise.all([
+        fetch(firebaseUrl),
+        fetch("https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/sku_master.json")
+      ]);
+
+      const stockJson = await stockRes.json();
+      const skuJson = await skuRes.json();
+
+      const stockData = stockJson || {};
+      const skuData = skuJson || {};
+
+      // Merge SKU master with stock
+      data = Object.values(skuData).map(item => ({
+        ...item,
+        ...(stockData[item.SKU] || {}) // fill with stock if any
+      }));
+
+      setupLantaiFilter();
       renderTable();
+      updateLastUpdated();
+      document.getElementById("spinner").style.display = "none";
     }
 
     fetchData();
+
+    setInterval(() => {
+      console.log("Refreshing data...");
+      fetchData();
+    }, 60_000); // 60000 ms = 1 minute
   </script>
 </body>
 </html>
