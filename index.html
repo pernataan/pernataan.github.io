@@ -55,6 +55,26 @@
       border-bottom: 1px solid var(--border);
     }
 
+    .tab-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .tab-bar button {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      background-color: var(--bg);
+      color: var(--text);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .tab-bar button.active {
+      font-weight: bold;
+      background-color: var(--table-header);
+    }
+
     input, button, select {
       padding: 6px 10px;
       font-size: 14px;
@@ -69,13 +89,13 @@
       background-color: var(--table-header);
     }
 
-    #lantaiCheckboxes{
+    #lantaiCheckboxes {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
     }
 
-    #status-bar{
+    #status-bar {
       position: relative;
       color: gray;
       float: right;
@@ -113,11 +133,11 @@
     }
 
     th.sort-asc::after {
-      content: " 🔼";
+      content: " \1F53C";
     }
 
     th.sort-desc::after {
-      content: " 🔽";
+      content: " \1F53D";
     }
 
     th .resizer {
@@ -148,6 +168,11 @@
     <button onclick="toggleTheme()">Toggle Tema 🌗</button>
   </div>
 
+  <div class="tab-bar">
+    <button id="tab-all" class="active" onclick="setViewMode('all')">Semua</button>
+    <button id="tab-minus" onclick="setViewMode('minus')">Minus Saja</button>
+  </div>
+
   <div class="table-wrapper">
     <table id="data-table">
       <thead></thead>
@@ -157,32 +182,33 @@
 
   <script>
     const firebaseUrl = "https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/rekap.json";
-    const allColumns = [
+    const columnOrder = [
       "SKU", "NAMA",
       "A12 - 1", "A12 - 2", "A12 - 3", "A12 - 4",
       "A19 - 1", "A19 - 2", "A19 - 3",
       "A20 - 1", "A20 - 3",
       "LTC", "Grand Total"
     ];
-
-    const floorColumns = [
-      "A12 - 1", "A12 - 2", "A12 - 3", "A12 - 4",
-      "A19 - 1", "A19 - 2", "A19 - 3",
-      "A20 - 1", "A20 - 3",
-      "LTC"
-    ];
+    const floorColumns = columnOrder.slice(2, -1);
 
     let data = [];
     let currentSort = { column: null, asc: true };
+    let viewMode = "all";
 
     function toggleTheme() {
       document.body.classList.toggle('dark');
     }
 
+    function setViewMode(mode) {
+      viewMode = mode;
+      document.querySelectorAll(".tab-bar button").forEach(btn => btn.classList.remove("active"));
+      document.getElementById("tab-" + mode).classList.add("active");
+      renderTable();
+    }
+
     function updateLastUpdated() {
       const now = new Date();
-      const timeStr = now.toLocaleTimeString('id-ID');
-      document.getElementById("lastUpdated").textContent = timeStr;
+      document.getElementById("lastUpdated").textContent = now.toLocaleTimeString('id-ID');
     }
 
     function getSelectedFloors() {
@@ -199,9 +225,7 @@
 
     function saveLantaiFilter() {
       const checkboxes = document.querySelectorAll("#lantaiCheckboxes input[type='checkbox']");
-      const selected = Array.from(checkboxes)
-                            .filter(cb => cb.checked)
-                            .map(cb => cb.value);
+      const selected = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
       localStorage.setItem("selectedFloors", JSON.stringify(selected));
       renderTable();
     }
@@ -209,7 +233,6 @@
     function setupLantaiFilter() {
       const container = document.getElementById("lantaiCheckboxes");
       container.innerHTML = "";
-
       const selected = getSelectedFloors();
 
       floorColumns.forEach(floor => {
@@ -246,51 +269,6 @@
       renderTable();
     }
 
-    function renderTable() {
-      const search = document.getElementById('searchInput').value.toLowerCase();
-      const thead = document.querySelector("#data-table thead");
-      const tbody = document.querySelector("#data-table tbody");
-      const selectedFloors = getSelectedFloors();
-      const displayColumns = ["SKU", "NAMA", ...selectedFloors, "Grand Total"];
-      const savedWidths = JSON.parse(localStorage.getItem("columnWidths") || "{}");
-
-      thead.innerHTML = '';
-      const headerRow = document.createElement('tr');
-      displayColumns.forEach((col, i) => {
-        const th = document.createElement('th');
-        th.textContent = col;
-        th.onclick = () => sortData(col);
-        if (currentSort.column === col) {
-          th.classList.add(currentSort.asc ? 'sort-asc' : 'sort-desc');
-        }
-        if (savedWidths[col]) {
-          th.style.width = savedWidths[col];
-        }
-
-        const resizer = document.createElement("div");
-        resizer.className = "resizer";
-        resizer.addEventListener("mousedown", initResize(i, col));
-        th.appendChild(resizer);
-
-        headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow);
-
-      tbody.innerHTML = '';
-      data.filter(row => {
-        const keyword = `${row["SKU"] ?? ''} ${row["NAMA"] ?? ''}`.toLowerCase();
-        return keyword.includes(search);
-      }).forEach(row => {
-        const tr = document.createElement('tr');
-        displayColumns.forEach(col => {
-          const td = document.createElement('td');
-          td.textContent = row[col] ?? '';
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-    }
-
     function initResize(index, colKey) {
       return function (e) {
         e.preventDefault();
@@ -316,9 +294,62 @@
       };
     }
 
+    function renderTable() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const thead = document.querySelector("#data-table thead");
+      const tbody = document.querySelector("#data-table tbody");
+      const selectedFloors = getSelectedFloors();
+
+      thead.innerHTML = '';
+      const headerRow = document.createElement('tr');
+      columnOrder.forEach((col, i) => {
+        if (col === "SKU" || col === "NAMA" || selectedFloors.includes(col) || col === "Grand Total") {
+          const th = document.createElement('th');
+          th.textContent = col;
+          th.onclick = () => sortData(col);
+          if (currentSort.column === col) {
+            th.classList.add(currentSort.asc ? 'sort-asc' : 'sort-desc');
+          }
+          const resizer = document.createElement("div");
+          resizer.className = "resizer";
+          resizer.addEventListener("mousedown", initResize(i, col));
+          th.appendChild(resizer);
+
+          const widths = JSON.parse(localStorage.getItem("columnWidths") || "{}");
+          if (widths[col]) th.style.width = widths[col];
+
+          headerRow.appendChild(th);
+        }
+      });
+      thead.appendChild(headerRow);
+
+      tbody.innerHTML = '';
+      const filteredData = data.filter(row => {
+        const keyword = `${row["SKU"] ?? ''} ${row["NAMA"] ?? ''}`.toLowerCase();
+        if (!keyword.includes(search)) return false;
+
+        if (viewMode === "minus") {
+          return selectedFloors.some(col => Number(row[col]) < 0);
+        }
+
+        return true;
+      });
+
+      filteredData.forEach(row => {
+        const tr = document.createElement('tr');
+        columnOrder.forEach(col => {
+          if (col === "SKU" || col === "NAMA" || selectedFloors.includes(col) || col === "Grand Total") {
+            const td = document.createElement('td');
+            td.textContent = row[col] ?? '';
+            tr.appendChild(td);
+          }
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
     async function fetchData() {
       document.getElementById("spinner").style.display = "inline-block";
-
       const [stockRes, skuRes] = await Promise.all([
         fetch(firebaseUrl),
         fetch("https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/sku_master.json")
@@ -330,10 +361,9 @@
       const stockData = stockJson || {};
       const skuData = skuJson || {};
 
-      // Merge SKU master with stock
       data = Object.values(skuData).map(item => ({
         ...item,
-        ...(stockData[item.SKU] || {}) // fill with stock if any
+        ...(stockData[item.SKU] || {})
       }));
 
       setupLantaiFilter();
@@ -343,11 +373,7 @@
     }
 
     fetchData();
-
-    setInterval(() => {
-      console.log("Refreshing data...");
-      fetchData();
-    }, 60_000); // 60000 ms = 1 minute
+    setInterval(fetchData, 60000);
   </script>
 </body>
 </html>
