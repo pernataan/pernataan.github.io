@@ -181,7 +181,7 @@
   <h2>Pernataan DPS</h2>
 
   <header>
-    <input type="text" id="searchInput" placeholder="Cari SKU atau Nama..." oninput="renderTable()" />
+    <input type="text" id="searchInput" placeholder="Cari SKU atau Nama..." oninput="resetAndRenderTable()" />
     <div id="status-bar">
       Last updated: <span id="lastUpdated">-</span>
       <span id="spinner"></span>
@@ -379,11 +379,32 @@
       renderedRows += batchSize;
     }
 
+    function resetAndRenderTable() {
+      renderedRows = 0;
+      document.querySelector("#data-table tbody").innerHTML = '';
+      renderTable();
+    }
+
     async function fetchData() {
       document.getElementById("spinner").style.display = "inline-block";
-      const res = await fetch("https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/rekap.json");
-      const json = await res.json();
-      data = Object.values(json || {});
+
+      const [stockRes, skuRes] = await Promise.all([
+        fetch("https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/rekap.json"),
+        fetch("https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/sku_master.json")
+      ]);
+      
+      const stockJson = await stockRes.json();
+      const skuJson = await skuRes.json();
+
+      const stockData = stockJson || {};
+      const skuData = skuJson || {};
+
+      // Merge SKU master with stock
+      data = Object.values(skuData).map(item => ({
+        ...item,
+        ...(stockData[item.SKU] || {}) // fill with stock if any
+      }));
+
       setupLantaiCheckboxes();
       document.querySelector("#data-table thead").innerHTML = '';
       document.querySelector("#data-table tbody").innerHTML = '';
