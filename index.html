@@ -4,204 +4,46 @@
   <meta charset="UTF-8" />
   <title>Pernataan DPS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    :root {
-      --bg: #ffffff;
-      --text: #000000;
-      --table-header: #f0f0f0;
-      --border: #cccccc;
-      --highlight-minus: #ffcccc;
-    }
-
-    body.dark {
-      --bg: #1e1e1e;
-      --text: #ffffff;
-      --table-header: #2a2a2a;
-      --border: #555555;
-      --highlight-minus: #661111;
-    }
-
-    body.blue {
-      --bg: #e6f0ff;
-      --text: #003366;
-      --table-header: #cce0ff;
-      --border: #99c2ff;
-      --highlight-minus: #ff9999;
-    }
-
-    body.sepia {
-      --bg: #f4ecd8;
-      --text: #5b4636;
-      --table-header: #e3d7c1;
-      --border: #c5b79e;
-      --highlight-minus: #f8c0a0;
-    }
-
-    body.reddark {
-      --bg: #1e0000;
-      --text: #ff4444;
-      --table-header: #300000;
-      --border: #772222;
-      --highlight-minus: #660000;
-    }
-
-    body.mars {
-      --bg: #451804;
-      --text: #f0e7e7;
-      --table-header: #c1440e;
-      --border: 	#e77d11;
-      --highlight-minus: #fda600;
-    }
-
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: sans-serif;
-      padding: 1rem;
-      transition: background 0.3s, color 0.3s;
-      overflow: hidden;
-    }
-
-    header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .highlight-minus {
-      background-color: var(--highlight-minus);
-    }
-
-    #themeSelector {
-      margin-left: auto;
-    }
-
-    .tab-buttons {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 1rem;
-    }
-
-    .tab-buttons button.active {
-      font-weight: bold;
-      border-bottom: 2px solid var(--text);
-    }
-
-    .table-wrapper {
-      max-height: 80vh;
-      overflow: scroll;
-    }
-
-    #data-table {
-      width: 100%;
-      border-collapse: collapse;
-      table-layout: auto;
-      margin-bottom: 3em;
-      border-collapse: collapse;
-      border: 1px solid var(--border);
-    }
-
-    #searchInput {
-      width: 50vw;
-      padding: .5rem;
-    }
-
-    #lantaiFilter {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 10px;
-      margin-bottom: 10px;
-    }
-
-    #status-bar {
-      margin-top: 5px;
-      color: gray;
-      font-size: 0.9em;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #spinner {
-      width: 14px;
-      height: 14px;
-      border: 2px solid var(--border);
-      border-top: 2px solid var(--text);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    thead th {
-      position: sticky;
-      top: 0;
-      background-color: var(--table-header);
-      z-index: 1;
-      cursor: pointer;
-    }
-
-    thead th.sort-asc::after {
-      content: ' 🔼';
-    }
-
-    thead th.sort-desc::after {
-      content: ' 🔽';
-    }
-    
-
-    th, td {
-      border: 1px solid var(--border);
-      padding: 6px 10px;
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    th {
-      position: relative;
-    }
-
-    .resizer {
-      position: absolute;
-      right: 0;
-      top: 0;
-      width: 5px;
-      height: 100%;
-      cursor: col-resize;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-  </style>
+  <link rel="stylesheet" href="style.min.css">
+  <script src="main.min.js" defer></script>
 </head>
 <body class="light">
-  <h2>Pernataan DPS</h2>
+  <div class="logo">
+    <h2>Pernataan DPS</h2>
 
-  <header>
-    <input type="text" id="searchInput" placeholder="Cari SKU atau Nama..." oninput="resetAndRenderTable()" />
     <div id="status-bar">
       Last updated: <span id="lastUpdated">-</span>
       <span id="spinner"></span>
     </div>
-    <select id="themeSelector" aria-label="themeSelector" onchange="changeTheme(this.value)">
-      <option value="light">Terang</option>
-      <option value="dark">Gelap</option>
-      <option value="blue">Biru</option>
-      <option value="sepia">Sepia</option>
-      <option value="reddark">Gelap Merah</option>
-      <option value="mars">Mars</option>
-    </select>
-  </header>
+  </div>
 
+  <div class="search-wrapper">
+    <input type="text" id="searchInput" placeholder="Cari SKU atau Nama..." oninput="onSearchInput()" />
+    <span class="clear-button" onclick="clearSearch()">×</span>
+  </div>
 
-  <div id="lantaiFilter"></div>
+  <div class="filter-wrapper">
+    <button id="toggleFilterBtn" class="mobile-toggle">🔽 Filter</button>
 
-  <div class="tab-buttons">
-    <button onclick="setTab('all')" id="tabAll" class="active">Semua Data</button>
-    <button onclick="setTab('minus')" id="tabMinus">Stok Minus</button>
+    <div class="filter-inner">
+      <header>
+        <select id="themeSelector" aria-label="themeSelector" onchange="changeTheme(this.value)">
+          <option value="light">Terang</option>
+          <option value="dark">Gelap</option>
+          <option value="blue">Biru</option>
+          <option value="sepia">Sepia</option>
+          <option value="reddark">Gelap Merah</option>
+          <option value="mars">Mars</option>
+        </select>
+
+        <div class="tab-buttons">
+          <button onclick="setTab('all')" id="tabAll" class="active">Semua Data</button>
+          <button onclick="setTab('minus')" id="tabMinus">Stok Minus</button>
+        </div>
+      </header>
+
+      <div id="lantaiFilter"></div>
+    </div>
   </div>
 
   <div class="table-wrapper" id="tableWrapper">
@@ -211,219 +53,5 @@
     </table>
   </div>
 
-  <script>
-    const columnOrder = [
-      "SKU", "NAMA",
-      "A12 - 1", "A12 - 2", "A12 - 3", "A12 - 4",
-      "A19 - 1", "A19 - 2", "A19 - 3",
-      "A20 - 1", "A20 - 3",
-      "LTC", "Grand Total"
-    ];
-
-    const lantaiColumns = columnOrder.slice(2, -1);
-    let data = [];
-    let tab = 'all';
-    let batchSize = 100;
-    let renderedRows = 0;
-    let currentSort = { column: null, asc: true };
-
-    function changeTheme(theme) {
-      document.body.className = theme;
-      localStorage.setItem("selectedTheme", theme);
-    }
-
-    function loadSavedTheme() {
-      const saved = localStorage.getItem("selectedTheme");
-      if (saved) {
-        document.body.className = saved;
-        const selector = document.getElementById("themeSelector");
-        if (selector) selector.value = saved;
-      }
-    }
-
-    function setTab(value) {
-      tab = value;
-      document.getElementById("tabAll").classList.remove("active");
-      document.getElementById("tabMinus").classList.remove("active");
-      document.getElementById("tab" + capitalize(value)).classList.add("active");
-      renderedRows = 0;
-      document.querySelector("#data-table tbody").innerHTML = '';
-      renderTable();
-    }
-
-    function capitalize(str) {
-      return str.charAt(0).toUpperCase() + str.slice(1);
-    }
-
-    function getSelectedFloors() {
-      return JSON.parse(localStorage.getItem("selectedFloors") || JSON.stringify(lantaiColumns));
-    }
-
-    function saveSelectedFloors(selected) {
-      localStorage.setItem("selectedFloors", JSON.stringify(selected));
-      renderedRows = 0;
-      document.querySelector("#data-table tbody").innerHTML = '';
-      renderTable();
-    }
-
-    function setupLantaiCheckboxes() {
-      const container = document.getElementById("lantaiFilter");
-      container.innerHTML = '';
-      lantaiColumns.forEach(col => {
-        const label = document.createElement("label");
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.value = col;
-        checkbox.checked = getSelectedFloors().includes(col);
-        checkbox.onchange = () => {
-          const selected = Array.from(document.querySelectorAll("#lantaiFilter input:checked"))
-                                .map(cb => cb.value);
-          saveSelectedFloors(selected);
-        };
-        label.appendChild(checkbox);
-        label.append(" ", col);
-        container.appendChild(label);
-      });
-    }
-
-    function initResize(index) {
-      return function (e) {
-        const th = document.querySelectorAll("th")[index];
-        const startX = e.pageX;
-        const startWidth = th.offsetWidth;
-
-        function onMouseMove(e) {
-          const newWidth = startWidth + (e.pageX - startX);
-          th.style.width = newWidth + "px";
-        }
-
-        function onMouseUp() {
-          document.removeEventListener("mousemove", onMouseMove);
-          document.removeEventListener("mouseup", onMouseUp);
-        }
-
-        document.addEventListener("mousemove", onMouseMove);
-        document.addEventListener("mouseup", onMouseUp);
-      };
-    }
-
-    function sortTable(column) {
-      currentSort.asc = currentSort.column === column ? !currentSort.asc : true;
-      currentSort.column = column;
-      
-      data.sort((a, b) => {
-        let valA = a[column] ?? '';
-        let valB = b[column] ?? '';
-        return currentSort.asc
-          ? valA.toString().localeCompare(valB.toString(), undefined, { numeric: true })
-          : valB.toString().localeCompare(valA.toString(), undefined, { numeric: true });
-      });
-      renderedRows = 0;
-      document.querySelector("#data-table tbody").innerHTML = '';
-      renderTable();
-    }
-
-    function renderTable() {
-      const search = document.getElementById('searchInput').value.toLowerCase();
-      const selectedFloors = getSelectedFloors();
-      const dynamicColumns = ["SKU", "NAMA", ...selectedFloors, "Grand Total"];
-      const thead = document.querySelector("#data-table thead");
-      const tbody = document.querySelector("#data-table tbody");
-
-      // Clear and re-render header
-      thead.innerHTML = '';
-      const headerRow = document.createElement('tr');
-      dynamicColumns.forEach((col, index) => {
-        const th = document.createElement('th');
-        th.textContent = col;
-        th.onclick = () => sortTable(col);
-        if (currentSort.column === col) {
-          th.classList.add(currentSort.asc ? "sort-asc" : "sort-desc");
-        }
-
-        // Add resizer
-        const resizer = document.createElement('div');
-        resizer.classList.add('resizer');
-        resizer.addEventListener('mousedown', initResize(index));
-        th.appendChild(resizer);
-
-        headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow);
-
-      // Filter data by tab and search
-      let filtered = data.filter(row => {
-        const keyword = `${row["SKU"] ?? ''} ${row["NAMA"] ?? ''}`.toLowerCase();
-        const searchMatch = keyword.includes(search);
-        const minusMatch = tab !== 'minus' || selectedFloors.some(c => Number(row[c]) < 0) || Number(row["Grand Total"]) < 0;
-        return searchMatch && minusMatch;
-      });
-
-      // Render rows
-      const fragment = document.createDocumentFragment();
-      const slice = filtered.slice(renderedRows, renderedRows + batchSize);
-      slice.forEach(row => {
-        const tr = document.createElement('tr');
-        dynamicColumns.forEach(col => {
-          const td = document.createElement('td');
-          let value = row[col];
-          if (value === undefined || value === "") value = "-";
-          td.textContent = value;
-          if (!isNaN(value) && Number(value) < 0) td.classList.add("highlight-minus");
-          tr.appendChild(td);
-        });
-        fragment.appendChild(tr);
-      });
-
-      tbody.appendChild(fragment);
-      renderedRows += batchSize;
-    }
-
-    function resetAndRenderTable() {
-      renderedRows = 0;
-      document.querySelector("#data-table tbody").innerHTML = '';
-      renderTable();
-    }
-
-    async function fetchData() {
-      document.getElementById("spinner").style.display = "inline-block";
-
-      const [stockRes, skuRes] = await Promise.all([
-        fetch("https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/rekap.json"),
-        fetch("https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/sku_master.json")
-      ]);
-      
-      const stockJson = await stockRes.json();
-      const skuJson = await skuRes.json();
-
-      const stockData = stockJson || {};
-      const skuData = skuJson || {};
-
-      // Merge SKU master with stock
-      data = Object.values(skuData).map(item => ({
-        ...item,
-        ...(stockData[item.SKU] || {}) // fill with stock if any
-      }));
-
-      setupLantaiCheckboxes();
-      document.querySelector("#data-table thead").innerHTML = '';
-      document.querySelector("#data-table tbody").innerHTML = '';
-      renderedRows = 0;
-      renderTable();
-      document.getElementById("lastUpdated").textContent = new Date().toLocaleTimeString('id-ID');
-      document.getElementById("spinner").style.display = "none";
-    }
-
-    document.getElementById("tableWrapper").addEventListener("scroll", () => {
-      const wrapper = document.getElementById("tableWrapper");
-      if (wrapper.scrollTop + wrapper.clientHeight >= wrapper.scrollHeight - 10) {
-        renderTable();
-      }
-    });
-
-    loadSavedTheme();
-    fetchData();
-    setInterval(fetchData, 60000);
-  </script>
 </body>
 </html>
