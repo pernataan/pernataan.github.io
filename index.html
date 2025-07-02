@@ -62,6 +62,13 @@
       overflow: hidden;
     }
 
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .highlight-minus {
       background-color: var(--highlight-minus);
     }
@@ -83,27 +90,16 @@
 
     .table-wrapper {
       max-height: 80vh;
-      overflow: auto;
-      border: 1px solid var(--border);
+      overflow: scroll;
     }
 
-    table {
+    #data-table {
       width: 100%;
       border-collapse: collapse;
-    }
-
-    thead th {
-      position: sticky;
-      top: 0;
-      background-color: var(--table-header);
-      z-index: 1;
-    }
-
-    th, td {
+      table-layout: auto;
+      margin-bottom: 3em;
+      border-collapse: collapse;
       border: 1px solid var(--border);
-      padding: 6px 10px;
-      text-align: left;
-      white-space: nowrap;
     }
 
     #searchInput {
@@ -140,18 +136,57 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background-color: var(--table-header);
+      z-index: 1;
+      cursor: pointer;
+    }
+
+    thead th.sort-asc::after {
+      content: ' 🔼';
+    }
+
+    thead th.sort-desc::after {
+      content: ' 🔽';
+    }
+    
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      position: relative;
+    }
+
+    .resizer {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 5px;
+      height: 100%;
+      cursor: col-resize;
+      -webkit-user-select: none;
+      user-select: none;
+    }
   </style>
 </head>
 <body class="light">
   <h2>Pernataan DPS</h2>
 
-  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+  <header>
     <input type="text" id="searchInput" placeholder="Cari SKU atau Nama..." oninput="renderTable()" />
     <div id="status-bar">
       Last updated: <span id="lastUpdated">-</span>
       <span id="spinner"></span>
     </div>
-    <select id="themeSelector" onchange="changeTheme(this.value)">
+    <select id="themeSelector" aria-label="themeSelector" onchange="changeTheme(this.value)">
       <option value="light">Terang</option>
       <option value="dark">Gelap</option>
       <option value="blue">Biru</option>
@@ -159,7 +194,7 @@
       <option value="reddark">Gelap Merah</option>
       <option value="mars">Mars</option>
     </select>
-  </div>
+  </header>
 
 
   <div id="lantaiFilter"></div>
@@ -190,6 +225,7 @@
     let tab = 'all';
     let batchSize = 100;
     let renderedRows = 0;
+    let currentSort = { column: null, asc: true };
 
     function changeTheme(theme) {
       document.body.className = theme;
@@ -250,6 +286,43 @@
       });
     }
 
+    function initResize(index) {
+      return function (e) {
+        const th = document.querySelectorAll("th")[index];
+        const startX = e.pageX;
+        const startWidth = th.offsetWidth;
+
+        function onMouseMove(e) {
+          const newWidth = startWidth + (e.pageX - startX);
+          th.style.width = newWidth + "px";
+        }
+
+        function onMouseUp() {
+          document.removeEventListener("mousemove", onMouseMove);
+          document.removeEventListener("mouseup", onMouseUp);
+        }
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+      };
+    }
+
+    function sortTable(column) {
+      currentSort.asc = currentSort.column === column ? !currentSort.asc : true;
+      currentSort.column = column;
+      
+      data.sort((a, b) => {
+        let valA = a[column] ?? '';
+        let valB = b[column] ?? '';
+        return currentSort.asc
+          ? valA.toString().localeCompare(valB.toString(), undefined, { numeric: true })
+          : valB.toString().localeCompare(valA.toString(), undefined, { numeric: true });
+      });
+      renderedRows = 0;
+      document.querySelector("#data-table tbody").innerHTML = '';
+      renderTable();
+    }
+
     function renderTable() {
       const search = document.getElementById('searchInput').value.toLowerCase();
       const selectedFloors = getSelectedFloors();
@@ -257,23 +330,36 @@
       const thead = document.querySelector("#data-table thead");
       const tbody = document.querySelector("#data-table tbody");
 
-      if (thead.innerHTML === '') {
-        const headerRow = document.createElement('tr');
-        dynamicColumns.forEach(col => {
-          const th = document.createElement('th');
-          th.textContent = col;
-          headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-      }
+      // Clear and re-render header
+      thead.innerHTML = '';
+      const headerRow = document.createElement('tr');
+      dynamicColumns.forEach((col, index) => {
+        const th = document.createElement('th');
+        th.textContent = col;
+        th.onclick = () => sortTable(col);
+        if (currentSort.column === col) {
+          th.classList.add(currentSort.asc ? "sort-asc" : "sort-desc");
+        }
 
+        // Add resizer
+        const resizer = document.createElement('div');
+        resizer.classList.add('resizer');
+        resizer.addEventListener('mousedown', initResize(index));
+        th.appendChild(resizer);
+
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+
+      // Filter data by tab and search
       let filtered = data.filter(row => {
         const keyword = `${row["SKU"] ?? ''} ${row["NAMA"] ?? ''}`.toLowerCase();
         const searchMatch = keyword.includes(search);
-        const minusMatch = tab !== 'minus' || lantaiColumns.some(c => Number(row[c]) < 0);
+        const minusMatch = tab !== 'minus' || selectedFloors.some(c => Number(row[c]) < 0) || Number(row["Grand Total"]) < 0;
         return searchMatch && minusMatch;
       });
 
+      // Render rows
       const fragment = document.createDocumentFragment();
       const slice = filtered.slice(renderedRows, renderedRows + batchSize);
       slice.forEach(row => {
@@ -288,6 +374,7 @@
         });
         fragment.appendChild(tr);
       });
+
       tbody.appendChild(fragment);
       renderedRows += batchSize;
     }
