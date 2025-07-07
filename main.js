@@ -1,12 +1,12 @@
 const columnOrder = [
-  "SKU", "NAMA",
+  "SKU", "NAMA", "Grand Total",
   "A12 - 1", "A12 - 2", "A12 - 3", "A12 - 4",
   "A19 - 1", "A19 - 2", "A19 - 3",
   "A20 - 1", "A20 - 3",
-  "LTC", "Grand Total"
+  "LTC"
 ];
 
-const lantaiColumns = columnOrder.slice(2, -1);
+const lantaiColumns = columnOrder.slice(3);
 let data = [];
 let tab = 'all';
 let batchSize = 100;
@@ -72,6 +72,20 @@ function setupLantaiCheckboxes() {
   });
 }
 
+function selectAllFloors() {
+  const checkboxes = document.querySelectorAll("#lantaiFilter input[type='checkbox']");
+  checkboxes.forEach(cb => cb.checked = true);
+  const selected = Array.from(checkboxes).map(cb => cb.value);
+  saveSelectedFloors(selected);
+}
+
+function clearAllFloors() {
+  const checkboxes = document.querySelectorAll("#lantaiFilter input[type='checkbox']");
+  checkboxes.forEach(cb => cb.checked = false);
+  saveSelectedFloors([]);
+}
+
+
 function initResize(index) {
   return function (e) {
     const th = document.querySelectorAll("th")[index];
@@ -112,7 +126,7 @@ function sortTable(column) {
 function renderTable() {
   const search = document.getElementById('searchInput').value.toLowerCase();
   const selectedFloors = getSelectedFloors();
-  const dynamicColumns = ["SKU", "NAMA", ...selectedFloors, "Grand Total"];
+  const dynamicColumns = ["SKU", "NAMA", "Grand Total", ...selectedFloors];
   const thead = document.querySelector("#data-table thead");
   const tbody = document.querySelector("#data-table tbody");
 
@@ -230,6 +244,12 @@ document.getElementById("toggleFilterBtn").addEventListener("click", function ()
   const isOpen = wrapper.classList.toggle("show");
 
   button.textContent = (isOpen ? "🔼" : "🔽") + " Filter";
+});
+
+document.getElementById("lastUpdated").addEventListener("click", function () {
+  const audio = document.getElementById("easterAudio");
+  audio.currentTime = 0;
+  audio.play();
 });
 
 loadSavedTheme();

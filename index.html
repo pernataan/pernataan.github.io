@@ -13,7 +13,7 @@
 
     <div id="status-bar">
       Last updated: <span id="lastUpdated">-</span>
-      <span id="spinner"></span>
+      <a id="spinner"></a>
     </div>
   </div>
 
@@ -42,7 +42,11 @@
         </div>
       </header>
 
-      <div id="lantaiFilter"></div>
+      <div class="lantai-wrapper">
+        <div id="lantaiFilter"></div>
+        <button onclick="selectAllFloors()">Pilih Semua Lantai</button>
+        <button onclick="clearAllFloors()">Hapus Semua Lantai</button>
+      </div>
     </div>
   </div>
 
@@ -52,6 +56,6 @@
       <tbody></tbody>
     </table>
   </div>
-
+  <audio id="easterAudio" src="https://www.myinstants.com/media/sounds/hidup-jokowi.mp3" preload="auto"></audio>
 </body>
 </html>
