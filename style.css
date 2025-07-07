@@ -110,7 +110,6 @@
     border-radius: 9px;
     background-color: transparent;
     border: 1px solid var(--border);
-    border-bottom: 2px solid rgba(0, 0, 0, 0);
     padding: 8px 16px;
     color: var(--text);
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0) inset;
@@ -183,20 +182,6 @@
     align-items: center;
     justify-content: center;
   }
-
-  /* .filter-inner button {
-    padding: 6px 12px;
-    border: 1px solid var(--border);
-    background: var(--table-header);
-    color: var(--text);
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background 0.3s ease;
-  }
-
-  .filter-inner button:hover {
-    background: rgba(255,255,255,0.2);
-  } */
 
   .table-wrapper {
     max-height: 80vh;
