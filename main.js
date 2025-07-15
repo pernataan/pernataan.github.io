@@ -37,6 +37,14 @@ function setTab(value) {
   renderTable();
 }
 
+function debounce(fn, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
 function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
@@ -124,7 +132,7 @@ function sortTable(column) {
 }
 
 function renderTable() {
-  const search = document.getElementById('searchInput').value.toLowerCase();
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
   const selectedFloors = getSelectedFloors();
   const dynamicColumns = ["SKU", "NAMA", "Grand Total", ...selectedFloors];
   const thead = document.querySelector("#data-table thead");
@@ -140,13 +148,13 @@ function renderTable() {
     if (currentSort.column === col) {
       th.classList.add(currentSort.asc ? "sort-asc" : "sort-desc");
     }
-
+    
     // Add resizer
     const resizer = document.createElement('div');
     resizer.classList.add('resizer');
     resizer.addEventListener('mousedown', initResize(index));
     th.appendChild(resizer);
-
+    
     headerRow.appendChild(th);
   });
   thead.appendChild(headerRow);
@@ -154,8 +162,11 @@ function renderTable() {
   // Filter data by tab and search
   let filtered = data.filter(row => {
     const keyword = `${row["SKU"] ?? ''} ${row["NAMA"] ?? ''}`.toLowerCase();
-    const searchMatch = keyword.includes(search);
+    const tokens = search.trim().split(/\s+/); // Split input by spaces into keywords
+
+    const searchMatch = tokens.every(token => keyword.includes(token));
     const minusMatch = tab !== 'minus' || selectedFloors.some(c => Number(row[c]) < 0) || Number(row["Grand Total"]) < 0;
+
     return searchMatch && minusMatch;
   });
 
@@ -185,6 +196,8 @@ function refreshTable() {
   renderTable();
 }
 
+const debouncedRefreshTable = debounce(refreshTable, 250);
+
 function onSearchInput() {
   const input = document.getElementById("searchInput");
   const clearBtn = document.querySelector(".clear-button");
@@ -193,7 +206,7 @@ function onSearchInput() {
   } else {
     clearBtn.classList.remove("show");
   }
-  refreshTable();
+  debouncedRefreshTable();
 }
 
 function clearSearch() {
@@ -250,6 +263,43 @@ document.getElementById("lastUpdated").addEventListener("click", function () {
   const audio = document.getElementById("easterAudio");
   audio.currentTime = 0;
   audio.play();
+});
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const tableWrapper = document.getElementById("tableWrapper");
+  const rocket = document.getElementById("rocketmeluncur");
+  let isLaunched = false;
+
+  // Scroll listener
+  tableWrapper.addEventListener("scroll", () => {
+    if (isLaunched) return; // Jangan munculkan ulang jika sedang launch
+
+    if (tableWrapper.scrollTop > 200) {
+      rocket.classList.add("showrocket");
+    } else {
+      rocket.classList.remove("showrocket");
+    }
+  });
+
+  // Click to scroll to top
+  rocket.addEventListener("click", () => {
+    rocket.classList.add("launchrocket");
+    isLaunched = true;
+
+    // Scroll to top
+    tableWrapper.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+
+    // Reset class after animation
+    setTimeout(() => {
+      rocket.classList.remove("launchrocket");
+      rocket.classList.remove("showrocket");
+      isLaunched = false;
+    }, 800); // harus sesuai dengan durasi transform CSS
+  });
 });
 
 loadSavedTheme();
