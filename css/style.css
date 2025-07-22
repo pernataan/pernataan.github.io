@@ -7,7 +7,7 @@
 }
 
 body.dark {
-  --bg: #1e1e1e;
+  --bg: #111;
   --text: #ffffff;
   --table-header: #2a2a2a;
   --border: #555555;
@@ -30,8 +30,8 @@ body.sepia {
   --highlight-minus: #f8c0a0;
 }
 
-body.reddark {
-  --bg: #1e0000;
+body.blood {
+  --bg: #000;
   --text: #ff4444;
   --table-header: #300000;
   --border: #772222;
@@ -253,7 +253,7 @@ th, td {
   z-index: 1000;
   width: 26px;
   height: 48px;
-  background: url(rocket.png) no-repeat 50% 0;
+  background: url(../assets/rocket.png) no-repeat 50% 0;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -266,7 +266,7 @@ th, td {
   display: block;
   margin-top: 48px;
   height: 14px;
-  background: url(rocket.png) no-repeat 50% -48px;
+  background: url(../assets/rocket.png) no-repeat 50% -48px;
   opacity: 0.5;
   transition: transform 0.2s ease;
   transform-origin: 50% 0;
@@ -305,6 +305,25 @@ th, td {
   50%  { transform: scale(1.2, 1.6); opacity: 1; }
   100% { transform: scale(1.0, 1.0); opacity: 0.5; }
 }
+
+td.harga {
+  position: relative;
+  white-space: nowrap;
+}
+
+td.harga:hover::after {
+  content: "+PPN";
+  position: absolute;
+  top: 2px;
+  right: -2px;
+  font-size: 0.7em;
+  padding: 1px 2px;
+  color: #fff;
+  background: #003366; /* opsional, biar gak ketabrak */
+  border-radius: 25px;
+  pointer-events: none;
+}
+
 
   /* responsive */
 @media (max-width: 768px) {

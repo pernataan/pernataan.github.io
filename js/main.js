@@ -2,16 +2,21 @@ const columnOrder = [
   "SKU", "NAMA", "Grand Total",
   "A12 - 1", "A12 - 2", "A12 - 3", "A12 - 4",
   "A19 - 1", "A19 - 2", "A19 - 3",
-  "A20 - 1", "A20 - 3",
-  "LTC"
+  "A20 - 1", "A20 - 3", "LTC"
 ];
 
-const lantaiColumns = columnOrder.slice(3);
+const lantaiColumns = columnOrder.slice(4);
 let data = [];
 let tab = 'all';
 let batchSize = 100;
 let renderedRows = 0;
 let currentSort = { column: null, asc: true };
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js')
+    .then(reg => console.log('✅ Service Worker registered:', reg.scope))
+    .catch(err => console.error('⚠️ Service Worker failed:', err));
+}
 
 function changeTheme(theme) {
   document.body.className = theme;
@@ -25,6 +30,14 @@ function loadSavedTheme() {
     const selector = document.getElementById("themeSelector");
     if (selector) selector.value = saved;
   }
+}
+
+function formatCurrency(num) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0
+  }).format(num);
 }
 
 function setTab(value) {
@@ -50,7 +63,8 @@ function capitalize(str) {
 }
 
 function getSelectedFloors() {
-  return JSON.parse(localStorage.getItem("selectedFloors") || JSON.stringify(lantaiColumns));
+  let saved = JSON.parse(localStorage.getItem("selectedFloors") || JSON.stringify(lantaiColumns));
+  return saved;
 }
 
 function saveSelectedFloors(selected) {
@@ -68,7 +82,9 @@ function setupLantaiCheckboxes() {
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.value = col;
-    checkbox.checked = getSelectedFloors().includes(col);
+    const selectedFloors = getSelectedFloors();
+
+    checkbox.checked = selectedFloors.includes(col);
     checkbox.onchange = () => {
       const selected = Array.from(document.querySelectorAll("#lantaiFilter input:checked"))
                             .map(cb => cb.value);
@@ -115,26 +131,10 @@ function initResize(index) {
   };
 }
 
-function sortTable(column) {
-  currentSort.asc = currentSort.column === column ? !currentSort.asc : true;
-  currentSort.column = column;
-  
-  data.sort((a, b) => {
-    let valA = a[column] ?? '';
-    let valB = b[column] ?? '';
-    return currentSort.asc
-      ? valA.toString().localeCompare(valB.toString(), undefined, { numeric: true })
-      : valB.toString().localeCompare(valA.toString(), undefined, { numeric: true });
-  });
-  renderedRows = 0;
-  document.querySelector("#data-table tbody").innerHTML = '';
-  renderTable();
-}
-
 function renderTable() {
   const search = document.getElementById('searchInput').value.toLowerCase().trim();
   const selectedFloors = getSelectedFloors();
-  const dynamicColumns = ["SKU", "NAMA", "Grand Total", ...selectedFloors];
+  const dynamicColumns = ["SKU", "NAMA","Grand Total", ...selectedFloors];
   const thead = document.querySelector("#data-table thead");
   const tbody = document.querySelector("#data-table tbody");
 
@@ -145,10 +145,11 @@ function renderTable() {
     const th = document.createElement('th');
     th.textContent = col;
     th.onclick = () => sortTable(col);
+
     if (currentSort.column === col) {
       th.classList.add(currentSort.asc ? "sort-asc" : "sort-desc");
     }
-    
+
     // Add resizer
     const resizer = document.createElement('div');
     resizer.classList.add('resizer');
@@ -180,7 +181,9 @@ function renderTable() {
       let value = row[col];
       if (value === undefined || value === "") value = "-";
       td.textContent = value;
+
       if (!isNaN(value) && Number(value) < 0) td.classList.add("highlight-minus");
+      
       tr.appendChild(td);
     });
     fragment.appendChild(tr);
@@ -188,6 +191,22 @@ function renderTable() {
 
   tbody.appendChild(fragment);
   renderedRows += batchSize;
+}
+
+function sortTable(column) {
+  currentSort.asc = currentSort.column === column ? !currentSort.asc : true;
+  currentSort.column = column;
+  
+  data.sort((a, b) => {
+    let valA = a[column] ?? '';
+    let valB = b[column] ?? '';
+    return currentSort.asc
+      ? valA.toString().localeCompare(valB.toString(), undefined, { numeric: true })
+      : valB.toString().localeCompare(valA.toString(), undefined, { numeric: true });
+  });
+  renderedRows = 0;
+  document.querySelector("#data-table tbody").innerHTML = '';
+  renderTable();
 }
 
 function refreshTable() {
@@ -218,22 +237,10 @@ function clearSearch() {
 async function fetchData() {
   document.getElementById("spinner").style.display = "inline-block";
 
-  const [stockRes, skuRes] = await Promise.all([
-    fetch("https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/rekap.json"),
-    fetch("https://pernataan-db-default-rtdb.asia-southeast1.firebasedatabase.app/sku_master.json")
-  ]);
-  
-  const stockJson = await stockRes.json();
-  const skuJson = await skuRes.json();
+  const res = await fetch("https://pusatpneumatic.com/pernataan/scripts/stok.json");
+  const rawData = await res.json();
 
-  const stockData = stockJson || {};
-  const skuData = skuJson || {};
-
-  // Merge SKU master with stock
-  data = Object.values(skuData).map(item => ({
-    ...item,
-    ...(stockData[item.SKU] || {}) // fill with stock if any
-  }));
+  data = rawData || [];
 
   setupLantaiCheckboxes();
   document.querySelector("#data-table thead").innerHTML = '';
@@ -264,7 +271,6 @@ document.getElementById("lastUpdated").addEventListener("click", function () {
   audio.currentTime = 0;
   audio.play();
 });
-
 
 document.addEventListener("DOMContentLoaded", () => {
   const tableWrapper = document.getElementById("tableWrapper");

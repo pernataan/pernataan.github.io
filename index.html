@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="favicon.ico" />
   <meta charset="UTF-8" />
-  <title>Pernataan DPS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
-  <script src="main.js" defer></script>
+  <title>Pernataan DPS</title>
+  <script src="js/main.js" defer></script>
 </head>
 <body class="light">
   <div class="logo">
@@ -28,11 +30,11 @@
     <div class="filter-inner">
       <header>
         <select id="themeSelector" aria-label="themeSelector" onchange="changeTheme(this.value)">
-          <option value="light">Terang</option>
-          <option value="dark">Gelap</option>
-          <option value="blue">Biru</option>
-          <option value="sepia">Sepia</option>
-          <option value="reddark">Gelap Merah</option>
+          <option value="light">Orang Normal</option>
+          <option value="dark">Malem</option>
+          <option value="blue">Langit</option>
+          <option value="sepia">Gurun</option>
+          <option value="blood">Darah</option>
           <option value="mars">Mars</option>
         </select>
 
@@ -56,7 +58,8 @@
       <tbody></tbody>
     </table>
   </div>
-  <a href="javascript:void(0);" id="rocketmeluncur" class=""><i></i></a>
-  <audio id="easterAudio" src="https://www.myinstants.com/media/sounds/hidup-jokowi.mp3" preload="auto"></audio>
+  <a href="javascript:void(0);" id="rocketmeluncur" class="" aria-label="Back to top"><i></i></a>
+  <audio id="easterAudio" src="assets/hidup-jokowi.mp3" preload="auto"></audio>
+  <audio id="easterAudio" src="assets/roblox-death.mp3" preload="auto"></audio>
 </body>
 </html>
