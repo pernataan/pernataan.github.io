@@ -1,11 +1,11 @@
 const columnOrder = [
-  "SKU", "NAMA", "Grand Total",
+  "SKU", "Nama", "Total",
   "A12 - 1", "A12 - 2", "A12 - 3", "A12 - 4",
   "A19 - 1", "A19 - 2", "A19 - 3",
   "A20 - 1", "A20 - 3", "LTC"
 ];
 
-const lantaiColumns = columnOrder.slice(4);
+const lantaiColumns = columnOrder.slice(3);
 let data = [];
 let tab = 'all';
 let batchSize = 100;
@@ -134,7 +134,7 @@ function initResize(index) {
 function renderTable() {
   const search = document.getElementById('searchInput').value.toLowerCase().trim();
   const selectedFloors = getSelectedFloors();
-  const dynamicColumns = ["SKU", "NAMA","Grand Total", ...selectedFloors];
+  const dynamicColumns = ["SKU", "Nama", "Total", ...selectedFloors];
   const thead = document.querySelector("#data-table thead");
   const tbody = document.querySelector("#data-table tbody");
 
@@ -162,11 +162,11 @@ function renderTable() {
 
   // Filter data by tab and search
   let filtered = data.filter(row => {
-    const keyword = `${row["SKU"] ?? ''} ${row["NAMA"] ?? ''}`.toLowerCase();
+    const keyword = `${row["SKU"] ?? ''} ${row["Nama"] ?? ''}`.toLowerCase();
     const tokens = search.trim().split(/\s+/); // Split input by spaces into keywords
 
     const searchMatch = tokens.every(token => keyword.includes(token));
-    const minusMatch = tab !== 'minus' || selectedFloors.some(c => Number(row[c]) < 0) || Number(row["Grand Total"]) < 0;
+    const minusMatch = tab !== 'minus' || selectedFloors.some(c => Number(row[c]) < 0) || Number(row["Total"]) < 0;
 
     return searchMatch && minusMatch;
   });
@@ -240,7 +240,18 @@ async function fetchData() {
   const res = await fetch("https://pusatpneumatic.com/pernataan/scripts/stok.json");
   const rawData = await res.json();
 
-  data = rawData || [];
+  data = (rawData || []).map(item => {
+    const row = {
+      SKU: item.s,
+      Nama: item.n,
+      Harga: item.p,
+      Total: item.t
+    };
+    item.k.forEach(loc => {
+      row[loc.l] = loc.q;
+    });
+    return row;
+  });
 
   setupLantaiCheckboxes();
   document.querySelector("#data-table thead").innerHTML = '';
