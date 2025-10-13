@@ -175,14 +175,11 @@ button:hover {
 }
 
 .lantai-wrapper {
-  background-color: #f9f9f9;
+  background-color: --bg;
   padding: 1rem;
   border-radius: 8px;
-  border: 1px solid #ddd;
+  border: 1px solid --border;
   margin: 1rem 0;
-}
-
-.lantai-wrapper button {
 }
 
 #lantaiFilter {
