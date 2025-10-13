@@ -42,7 +42,7 @@ body.mars {
   --bg: #451804;
   --text: #f0e7e7;
   --table-header: #c1440e;
-  --border: 	#e77d11;
+  --border: #e77d11;
   --highlight-minus: #fda600;
 }
 
@@ -156,7 +156,8 @@ button:hover {
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.1s ease, background-color 0.3s ease, color 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.1s ease, background-color 0.3s ease,
+    color 0.3s ease;
   z-index: 50;
 }
 
@@ -173,13 +174,119 @@ button:hover {
   color: var(--table-header);
 }
 
-.lantai-wrapper{
+.lantai-wrapper {
+  background-color: #f9f9f9;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin: 1rem 0;
+}
+
+.lantai-wrapper button {
+}
+
+#lantaiFilter {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  gap: 1rem;
+  margin: 1rem;
+}
+
+#lantaiFilter fieldset {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.5rem 1rem 1rem;
+  margin: 0;
+  background-color: #fff;
+}
+
+#lantaiFilter legend {
+  font-weight: bold;
+  padding: 0 0.5rem;
+  color: #333;
+}
+
+#lantaiFilter label {
+  display: block; /* Setiap checkbox di baris baru */
+  margin-top: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+
+#lantaiFilter input[type="checkbox"] {
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.group-controls button {
+  font-size: 0.75em;
+  padding: 3px 8px;
+  margin-right: 5px;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.group-controls button:hover {
+  background-color: #e0e0e0;
+}
+
+.lantai-header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 10px 0;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
+  cursor: pointer; /* Memberi tahu user bahwa ini bisa diklik */
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.lantai-title {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+/* Ikon panah untuk collapse/expand */
+#toggleLantaiIcon {
+  display: inline-block;
+  transition: transform 0.3s ease-in-out;
+  font-style: normal;
+}
+
+/* Kontrol global di sebelah kanan */
+.lantai-global-controls {
+  display: flex;
+  gap: 0.5rem; /* Jarak antar tombol */
+}
+
+.lantai-global-controls button {
+  padding: 5px 10px;
+  font-size: 0.8em;
+  background-color: #e9e9e9;
+  border: 1px solid #ccc;
+}
+
+/* CSS untuk animasi collapse/expand */
+#lantaiFilter {
+  /* Atur nilai max-height lebih besar dari tinggi maksimum konten Anda */
+  max-height: 1000px;
+  overflow: hidden;
+  opacity: 1;
+  transition: max-height 0.4s ease-out, opacity 0.3s ease-out,
+    margin-top 0.4s ease-out;
+}
+
+/* State ketika filter disembunyikan */
+#lantaiFilter.is-collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: -1rem; /* Menghilangkan margin agar transisi mulus */
+}
+
+/* Memutar ikon panah saat disembunyikan */
+#lantaiFilter.is-collapsed + .lantai-header #toggleLantaiIcon, /* Selector ini tidak berfungsi, kita perbaiki di JS */
+#toggleLantaiIcon.is-collapsed {
+  transform: rotate(180deg);
 }
 
 .table-wrapper {
@@ -202,7 +309,9 @@ button:hover {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 thead {
@@ -220,15 +329,15 @@ th {
 }
 
 th.sort-asc::after {
-  content: ' 🔼';
+  content: " 🔼";
 }
 
 th.sort-desc::after {
-  content: ' 🔽';
+  content: " 🔽";
 }
 
-
-th, td {
+th,
+td {
   border: 1px solid var(--border);
   padding: 6px 10px;
   text-align: left;
@@ -258,8 +367,8 @@ th, td {
   visibility: hidden;
   pointer-events: none;
   transition: visibility 0.6s cubic-bezier(0.6, 0.04, 0.98, 0.335),
-              opacity 0.6s cubic-bezier(0.6, 0.04, 0.98, 0.335),
-              transform 0.6s cubic-bezier(0.6, 0.04, 0.98, 0.335);
+    opacity 0.6s cubic-bezier(0.6, 0.04, 0.98, 0.335),
+    transform 0.6s cubic-bezier(0.6, 0.04, 0.98, 0.335);
 }
 
 #rocketmeluncur i {
@@ -301,9 +410,18 @@ th, td {
 }
 
 @keyframes flaming {
-  0%   { transform: scale(1.0, 1.0); opacity: 0.5; }
-  50%  { transform: scale(1.2, 1.6); opacity: 1; }
-  100% { transform: scale(1.0, 1.0); opacity: 0.5; }
+  0% {
+    transform: scale(1, 1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2, 1.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1, 1);
+    opacity: 0.5;
+  }
 }
 
 td.harga {
@@ -324,8 +442,7 @@ td.harga:hover::after {
   pointer-events: none;
 }
 
-
-  /* responsive */
+/* responsive */
 @media (max-width: 768px) {
   header {
     flex-direction: column;
@@ -382,11 +499,12 @@ td.harga:hover::after {
     -webkit-overflow-scrolling: touch;
   }
 
-  #lantaiFilter{ 
+  #lantaiFilter {
     gap: 15px;
   }
 
-  th, td {
+  th,
+  td {
     padding: 8px 6px;
     font-size: 14px;
   }

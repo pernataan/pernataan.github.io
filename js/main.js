@@ -1,22 +1,41 @@
 const columnOrder = [
-  "SKU", "Nama", "Total",
-  "A12 - 1", "A12 - 2", "A12 - 3", "A12 - 4",
-  "A19 - 1", "A19 - 2", "A19 - 3",
-  "A20 - 1", "A20 - 2", "A20 - 3", "A20 - 4", 
-  "LTC"
+  "SKU",
+  "Nama",
+  "Total",
+  "A12 - 1",
+  "A12 - 2",
+  "A12 - 3",
+  "A12 - 4",
+  "A19 - 1",
+  "A19 - 2",
+  "A19 - 3",
+  "A20 - 1",
+  "A20 - 2",
+  "A20 - 3",
+  "A20 - 4",
+  "B16 - 1",
+  "B16 - 2",
+  "B16 - 3",
+  "B16 - 4",
+  "OASIS - 1",
+  "OASIS - 2",
+  "OASIS - 3",
+  "OASIS - 4 ",
+  "LTC",
 ];
 
 const lantaiColumns = columnOrder.slice(3);
 let data = [];
-let tab = 'all';
+let tab = "all";
 let batchSize = 100;
 let renderedRows = 0;
 let currentSort = { column: null, asc: true };
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js')
-    .then(reg => console.log('✅ Service Worker registered:', reg.scope))
-    .catch(err => console.error('⚠️ Service Worker failed:', err));
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("service-worker.js")
+    .then((reg) => console.log("✅ Service Worker registered:", reg.scope))
+    .catch((err) => console.error("⚠️ Service Worker failed:", err));
 }
 
 function changeTheme(theme) {
@@ -37,7 +56,7 @@ function formatCurrency(num) {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
-    minimumFractionDigits: 0
+    minimumFractionDigits: 0,
   }).format(num);
 }
 
@@ -47,7 +66,7 @@ function setTab(value) {
   document.getElementById("tabMinus").classList.remove("active");
   document.getElementById("tab" + capitalize(value)).classList.add("active");
   renderedRows = 0;
-  document.querySelector("#data-table tbody").innerHTML = '';
+  document.querySelector("#data-table tbody").innerHTML = "";
   renderTable();
 }
 
@@ -64,21 +83,115 @@ function capitalize(str) {
 }
 
 function getSelectedFloors() {
-  let saved = JSON.parse(localStorage.getItem("selectedFloors") || JSON.stringify(lantaiColumns));
+  let saved = JSON.parse(
+    localStorage.getItem("selectedFloors") || JSON.stringify(lantaiColumns)
+  );
   return saved;
 }
 
 function saveSelectedFloors(selected) {
   localStorage.setItem("selectedFloors", JSON.stringify(selected));
   renderedRows = 0;
-  document.querySelector("#data-table tbody").innerHTML = '';
+  document.querySelector("#data-table tbody").innerHTML = "";
   renderTable();
+}
+
+function groupFloorsByName(columns) {
+  const groups = {};
+  columns.forEach((col) => {
+    const prefix = col.split(" - ")[0].trim();
+    if (!groups[prefix]) {
+      groups[prefix] = [];
+    }
+    groups[prefix].push(col);
+  });
+  return groups;
+}
+
+/**
+ * Fungsi baru untuk membuat checkbox filter yang sudah dikelompokkan.
+ */
+function setupLantaiCheckboxes() {
+  const container = document.getElementById("lantaiFilter");
+  container.innerHTML = ""; // Kosongkan container
+
+  const groupedFloors = groupFloorsByName(lantaiColumns);
+  const selectedFloors = getSelectedFloors();
+
+  // Loop setiap grup untuk membuat fieldset-nya
+  for (const groupName in groupedFloors) {
+    const fieldset = document.createElement("fieldset");
+    const legend = document.createElement("legend");
+    legend.textContent = groupName;
+    fieldset.appendChild(legend);
+
+    // Buat tombol kontrol untuk "Pilih Semua" dan "Hapus Semua" per grup
+    const controlsDiv = document.createElement("div");
+    controlsDiv.className = "group-controls";
+
+    const selectAllBtn = document.createElement("button");
+    selectAllBtn.textContent = "Pilih Semua";
+    selectAllBtn.type = "button";
+    selectAllBtn.onclick = () => toggleGroupCheckboxes(groupName, true);
+    controlsDiv.appendChild(selectAllBtn);
+
+    const clearAllBtn = document.createElement("button");
+    clearAllBtn.textContent = "Hapus Semua";
+    clearAllBtn.type = "button";
+    clearAllBtn.onclick = () => toggleGroupCheckboxes(groupName, false);
+    controlsDiv.appendChild(clearAllBtn);
+
+    fieldset.appendChild(controlsDiv);
+
+    // Buat checkbox untuk setiap item di dalam grup
+    const floorsInGroup = groupedFloors[groupName];
+    floorsInGroup.forEach((col) => {
+      const label = document.createElement("label");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = col;
+      checkbox.dataset.group = groupName; // Atribut data untuk membantu fungsi toggle
+      checkbox.checked = selectedFloors.includes(col);
+
+      checkbox.onchange = () => {
+        const selected = Array.from(
+          document.querySelectorAll("#lantaiFilter input:checked")
+        ).map((cb) => cb.value);
+        saveSelectedFloors(selected);
+      };
+
+      label.appendChild(checkbox);
+      label.append(` ${col}`);
+      fieldset.appendChild(label);
+    });
+
+    container.appendChild(fieldset);
+  }
+}
+
+/**
+ * Fungsi bantuan untuk tombol "Pilih Semua" / "Hapus Semua" per grup.
+ */
+function toggleGroupCheckboxes(groupName, shouldBeChecked) {
+  const checkboxesInGroup = document.querySelectorAll(
+    `#lantaiFilter input[data-group="${groupName}"]`
+  );
+  checkboxesInGroup.forEach((cb) => {
+    cb.checked = shouldBeChecked;
+  });
+
+  // Panggil fungsi save untuk update localStorage dan render ulang tabel
+  const allCheckedInputs = document.querySelectorAll(
+    "#lantaiFilter input:checked"
+  );
+  const allSelectedValues = Array.from(allCheckedInputs).map((cb) => cb.value);
+  saveSelectedFloors(allSelectedValues);
 }
 
 function setupLantaiCheckboxes() {
   const container = document.getElementById("lantaiFilter");
-  container.innerHTML = '';
-  lantaiColumns.forEach(col => {
+  container.innerHTML = "";
+  lantaiColumns.forEach((col) => {
     const label = document.createElement("label");
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -87,8 +200,9 @@ function setupLantaiCheckboxes() {
 
     checkbox.checked = selectedFloors.includes(col);
     checkbox.onchange = () => {
-      const selected = Array.from(document.querySelectorAll("#lantaiFilter input:checked"))
-                            .map(cb => cb.value);
+      const selected = Array.from(
+        document.querySelectorAll("#lantaiFilter input:checked")
+      ).map((cb) => cb.value);
       saveSelectedFloors(selected);
     };
     label.appendChild(checkbox);
@@ -98,18 +212,21 @@ function setupLantaiCheckboxes() {
 }
 
 function selectAllFloors() {
-  const checkboxes = document.querySelectorAll("#lantaiFilter input[type='checkbox']");
-  checkboxes.forEach(cb => cb.checked = true);
-  const selected = Array.from(checkboxes).map(cb => cb.value);
+  const checkboxes = document.querySelectorAll(
+    "#lantaiFilter input[type='checkbox']"
+  );
+  checkboxes.forEach((cb) => (cb.checked = true));
+  const selected = Array.from(checkboxes).map((cb) => cb.value);
   saveSelectedFloors(selected);
 }
 
 function clearAllFloors() {
-  const checkboxes = document.querySelectorAll("#lantaiFilter input[type='checkbox']");
-  checkboxes.forEach(cb => cb.checked = false);
+  const checkboxes = document.querySelectorAll(
+    "#lantaiFilter input[type='checkbox']"
+  );
+  checkboxes.forEach((cb) => (cb.checked = false));
   saveSelectedFloors([]);
 }
-
 
 function initResize(index) {
   return function (e) {
@@ -133,17 +250,20 @@ function initResize(index) {
 }
 
 function renderTable() {
-  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const search = document
+    .getElementById("searchInput")
+    .value.toLowerCase()
+    .trim();
   const selectedFloors = getSelectedFloors();
   const dynamicColumns = ["SKU", "Nama", "Total", ...selectedFloors];
   const thead = document.querySelector("#data-table thead");
   const tbody = document.querySelector("#data-table tbody");
 
   // Clear and re-render header
-  thead.innerHTML = '';
-  const headerRow = document.createElement('tr');
+  thead.innerHTML = "";
+  const headerRow = document.createElement("tr");
   dynamicColumns.forEach((col, index) => {
-    const th = document.createElement('th');
+    const th = document.createElement("th");
     th.textContent = col;
     th.onclick = () => sortTable(col);
 
@@ -152,22 +272,25 @@ function renderTable() {
     }
 
     // Add resizer
-    const resizer = document.createElement('div');
-    resizer.classList.add('resizer');
-    resizer.addEventListener('mousedown', initResize(index));
+    const resizer = document.createElement("div");
+    resizer.classList.add("resizer");
+    resizer.addEventListener("mousedown", initResize(index));
     th.appendChild(resizer);
-    
+
     headerRow.appendChild(th);
   });
   thead.appendChild(headerRow);
 
   // Filter data by tab and search
-  let filtered = data.filter(row => {
-    const keyword = `${row["SKU"] ?? ''} ${row["Nama"] ?? ''}`.toLowerCase();
+  let filtered = data.filter((row) => {
+    const keyword = `${row["SKU"] ?? ""} ${row["Nama"] ?? ""}`.toLowerCase();
     const tokens = search.trim().split(/\s+/); // Split input by spaces into keywords
 
-    const searchMatch = tokens.every(token => keyword.includes(token));
-    const minusMatch = tab !== 'minus' || selectedFloors.some(c => Number(row[c]) < 0) || Number(row["Total"]) < 0;
+    const searchMatch = tokens.every((token) => keyword.includes(token));
+    const minusMatch =
+      tab !== "minus" ||
+      selectedFloors.some((c) => Number(row[c]) < 0) ||
+      Number(row["Total"]) < 0;
 
     return searchMatch && minusMatch;
   });
@@ -175,16 +298,17 @@ function renderTable() {
   // Render rows
   const fragment = document.createDocumentFragment();
   const slice = filtered.slice(renderedRows, renderedRows + batchSize);
-  slice.forEach(row => {
-    const tr = document.createElement('tr');
-    dynamicColumns.forEach(col => {
-      const td = document.createElement('td');
+  slice.forEach((row) => {
+    const tr = document.createElement("tr");
+    dynamicColumns.forEach((col) => {
+      const td = document.createElement("td");
       let value = row[col];
       if (value === undefined || value === "") value = "-";
       td.textContent = value;
 
-      if (!isNaN(value) && Number(value) < 0) td.classList.add("highlight-minus");
-      
+      if (!isNaN(value) && Number(value) < 0)
+        td.classList.add("highlight-minus");
+
       tr.appendChild(td);
     });
     fragment.appendChild(tr);
@@ -197,22 +321,26 @@ function renderTable() {
 function sortTable(column) {
   currentSort.asc = currentSort.column === column ? !currentSort.asc : true;
   currentSort.column = column;
-  
+
   data.sort((a, b) => {
-    let valA = a[column] ?? '';
-    let valB = b[column] ?? '';
+    let valA = a[column] ?? "";
+    let valB = b[column] ?? "";
     return currentSort.asc
-      ? valA.toString().localeCompare(valB.toString(), undefined, { numeric: true })
-      : valB.toString().localeCompare(valA.toString(), undefined, { numeric: true });
+      ? valA
+          .toString()
+          .localeCompare(valB.toString(), undefined, { numeric: true })
+      : valB
+          .toString()
+          .localeCompare(valA.toString(), undefined, { numeric: true });
   });
   renderedRows = 0;
-  document.querySelector("#data-table tbody").innerHTML = '';
+  document.querySelector("#data-table tbody").innerHTML = "";
   renderTable();
 }
 
 function refreshTable() {
   renderedRows = 0;
-  document.querySelector("#data-table tbody").innerHTML = '';
+  document.querySelector("#data-table tbody").innerHTML = "";
   renderTable();
 }
 
@@ -238,28 +366,31 @@ function clearSearch() {
 async function fetchData() {
   document.getElementById("spinner").style.display = "inline-block";
 
-  const res = await fetch("https://pusatpneumatic.com/pernataan/scripts/stok.json");
+  const res = await fetch(
+    "https://pusatpneumatic.com/pernataan/scripts/stok.json"
+  );
   const rawData = await res.json();
 
-  data = (rawData || []).map(item => {
+  data = (rawData || []).map((item) => {
     const row = {
       SKU: item.s,
       Nama: item.n,
       Harga: item.p,
-      Total: item.t
+      Total: item.t,
     };
-    item.k.forEach(loc => {
+    item.k.forEach((loc) => {
       row[loc.l] = loc.q;
     });
     return row;
   });
 
   setupLantaiCheckboxes();
-  document.querySelector("#data-table thead").innerHTML = '';
-  document.querySelector("#data-table tbody").innerHTML = '';
+  document.querySelector("#data-table thead").innerHTML = "";
+  document.querySelector("#data-table tbody").innerHTML = "";
   renderedRows = 0;
   renderTable();
-  document.getElementById("lastUpdated").textContent = new Date().toLocaleTimeString('id-ID');
+  document.getElementById("lastUpdated").textContent =
+    new Date().toLocaleTimeString("id-ID");
   document.getElementById("spinner").style.display = "none";
 }
 
@@ -270,13 +401,15 @@ document.getElementById("tableWrapper").addEventListener("scroll", () => {
   }
 });
 
-document.getElementById("toggleFilterBtn").addEventListener("click", function () {
-  const wrapper = document.querySelector(".filter-wrapper");
-  const button = document.getElementById("toggleFilterBtn");
-  const isOpen = wrapper.classList.toggle("show");
+document
+  .getElementById("toggleFilterBtn")
+  .addEventListener("click", function () {
+    const wrapper = document.querySelector(".filter-wrapper");
+    const button = document.getElementById("toggleFilterBtn");
+    const isOpen = wrapper.classList.toggle("show");
 
-  button.textContent = (isOpen ? "🔼" : "🔽") + " Filter";
-});
+    button.textContent = (isOpen ? "🔼" : "🔽") + " Filter";
+  });
 
 document.getElementById("lastUpdated").addEventListener("click", function () {
   const audio = document.getElementById("easterAudio");
@@ -303,12 +436,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Click to scroll to top
   rocket.addEventListener("click", () => {
     rocket.classList.add("launchrocket");
+    const audio = document.getElementById("robloxAudio");
+    audio.currentTime = 0;
+    audio.play();
     isLaunched = true;
 
     // Scroll to top
     tableWrapper.scrollTo({
       top: 0,
-      behavior: "smooth"
+      behavior: "smooth",
     });
 
     // Reset class after animation
@@ -318,6 +454,20 @@ document.addEventListener("DOMContentLoaded", () => {
       isLaunched = false;
     }, 800); // harus sesuai dengan durasi transform CSS
   });
+
+  const lantaiHeader = document.getElementById("lantaiHeader");
+  const lantaiFilter = document.getElementById("lantaiFilter");
+  const toggleIcon = document.getElementById("toggleLantaiIcon");
+
+  if (lantaiHeader) {
+    lantaiHeader.addEventListener("click", () => {
+      lantaiFilter.classList.toggle("is-collapsed");
+      toggleIcon.classList.toggle("is-collapsed");
+
+      const isCollapsed = lantaiFilter.classList.contains("is-collapsed");
+      toggleIcon.textContent = isCollapsed ? "🔽" : "🔼";
+    });
+  }
 });
 
 loadSavedTheme();
