@@ -1,4 +1,4 @@
-const CACHE_NAME = "pwa-stok-cache-v2.23";
+const CACHE_NAME = "pwa-stok-cache-v2.24";
 const FILES_TO_CACHE = [
   "/",
   "/index.html",

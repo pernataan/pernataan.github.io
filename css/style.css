@@ -219,8 +219,6 @@ button:hover {
   font-size: 0.75em;
   padding: 3px 8px;
   margin-right: 5px;
-  border: 1px solid #ccc;
-  background-color: #f0f0f0;
   border-radius: 4px;
   cursor: pointer;
 }
@@ -254,13 +252,6 @@ button:hover {
 .lantai-global-controls {
   display: flex;
   gap: 0.5rem; /* Jarak antar tombol */
-}
-
-.lantai-global-controls button {
-  padding: 5px 10px;
-  font-size: 0.8em;
-  background-color: #e9e9e9;
-  border: 1px solid #ccc;
 }
 
 /* CSS untuk animasi collapse/expand */
