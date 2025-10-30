@@ -20,7 +20,7 @@ const columnOrder = [
   "OASIS - 1",
   "OASIS - 2",
   "OASIS - 3",
-  "OASIS - 4 ",
+  "OASIS - 4",
   "LTC",
 ];
 
